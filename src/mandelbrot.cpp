@@ -14,8 +14,8 @@ inline Uint32 colorFromIterations(unsigned int iterations,
   double h = (1 - f);
 
   int r = (int)(9 * h * f * f * f * 255);
-  int g = (int)(15 * h * h * f * f);
-  int b = (int)(8.5 * h * h * h * f);
+  int g = (int)(15 * h * h * f * f * 255);
+  int b = (int)(8.5 * h * h * h * f * 255);
 
   return 0xff000000 | r << 16 | g << 8 | b;
 }
@@ -25,37 +25,37 @@ void Mandelbrot::resetBounds() {
   zoom = 1.0;
   center_y = 0.0;
   center_x = -1.0;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::zoomIn() {
   zoom *= 0.95;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::zoomOut() {
   zoom *= 1.05;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::moveUp() {
   center_y -= 0.1 * zoom;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::moveLeft() {
   center_x -= 0.1 * zoom;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::moveDown() {
   center_y += 0.1 * zoom;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::moveRight() {
   center_x += 0.1 * zoom;
-  setBoundsFromZoom();
+  setBoundsFromState();
 }
 
 void Mandelbrot::increaseIterations() {
@@ -101,7 +101,7 @@ void Mandelbrot::onMouseUp(int x, int y) {
   zoom *= zoom_hypotenuse / window_hypotenuse;
 
   // Set bounds based on new center and zoom
-  setBoundsFromZoom();
+  setBoundsFromState();
 
   // reset selection rectangle to nothing
   selection.x = 0;
@@ -120,7 +120,7 @@ void Mandelbrot::onMouseMove(int x, int y) {
   }
 }
 
-void Mandelbrot::setBoundsFromZoom() {
+void Mandelbrot::setBoundsFromState() {
   min_x = center_x - (zoom * (x_range / 2.0));
   max_x = center_x + (zoom * (x_range / 2.0));
   min_y = center_y - (zoom * (y_range / 2.0));
@@ -165,8 +165,26 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
 void Mandelbrot::recalculate(std::vector<Uint32> &pixels,
                              unsigned int screen_width,
                              unsigned int screen_height) {
+  std::vector<std::thread> threads;
 
-  for (auto j = 0; j < screen_height; j++) {
+  auto thread_count = std::thread::hardware_concurrency();
+
+  for (int i = 0; i < thread_count; i++) {
+    unsigned int first_row = ((double)screen_height / (double)thread_count) * i;
+    unsigned int last_row =
+        ((double)screen_height / (double)thread_count) * (i + 1);
+    threads.emplace_back(std::thread(&Mandelbrot::updatePixelsInRange, this,
+                                     std::ref(pixels), first_row, last_row));
+  }
+
+  for (auto &t : threads) {
+    t.join();
+  }
+}
+
+void Mandelbrot::updatePixelsInRange(std::vector<Uint32> &pixels,
+                                     unsigned int start_y, unsigned int end_y) {
+  for (auto j = start_y; j < end_y; j++) {
     for (auto i = 0; i < screen_width; i++) {
       std::complex<double> c{
           min_x + (((double)i / screen_width) * (max_x - min_x)),

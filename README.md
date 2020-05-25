@@ -1,6 +1,6 @@
 # Mandelbrot Renderer
 
-This is an interactive C++ renderer of the Mandelbrot set, using SDL.
+This is an interactive C++ renderer of the Mandelbrot set, using SDL for output
 
 ## File and class structure
 

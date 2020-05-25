@@ -4,6 +4,7 @@
 #include "SDL.h"
 #include "input.h"
 #include "renderer.h"
+#include <future>
 #include <random>
 
 // forward declaration for use in function signature
@@ -48,6 +49,9 @@ private:
   double max_y = 1.25;
   double zoom = 1.0;
 
+  // rendering threads
+  std::vector<std::future<void>> render_threads;
+
   // maximum iterations
   unsigned int max_iterations = 50;
 
@@ -65,7 +69,11 @@ private:
   void recalculate(std::vector<Uint32> &pixels, unsigned int screen_width,
                    unsigned int screen_height);
 
-  void setBoundsFromZoom();
+  // method: recalculate colours of pixels within a specific y-range
+  void updatePixelsInRange(std::vector<Uint32> &pixels, unsigned int start_row,
+                           unsigned int end_rows);
+
+  void setBoundsFromState();
 };
 
 #endif
