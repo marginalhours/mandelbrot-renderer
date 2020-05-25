@@ -1,10 +1,8 @@
 #include "renderer.h"
 #include <iostream>
-#include <memory>
 #include <string>
 
-Renderer::Renderer(const std::size_t screen_width,
-                   const std::size_t screen_height)
+Renderer::Renderer(unsigned int screen_width, unsigned int screen_height)
     : screen_width(screen_width), screen_height(screen_height) {
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -39,6 +37,12 @@ Renderer::Renderer(const std::size_t screen_width,
     std::cerr << "Texture could not be created." << std::endl;
     std::cerr << " SDL_Error: " << SDL_GetError() << std::endl;
   }
+
+  // Create pixel array
+  pixels = std::vector<Uint32>(screen_height * screen_width, 0);
+
+  // initial render (to make screen black);
+  Render();
 }
 
 Renderer::~Renderer() {
@@ -48,41 +52,16 @@ Renderer::~Renderer() {
 }
 
 void Renderer::Render() {
-  SDL_Rect block;
-  block.w = screen_width;
-  block.h = screen_height;
 
-  // Clear screen
-  SDL_SetRenderDrawColor(sdl_renderer, 0x1E, 0x1E, 0x1E, 0xFF);
+  // Apply pixels vector to texture
+  SDL_UpdateTexture(sdl_texture, NULL, &pixels[0],
+                    screen_width * sizeof(uint32_t));
+
+  // Clear renderer
   SDL_RenderClear(sdl_renderer);
-
-  SDL_Texture *framebuffer{};
-
-  // // Render food
-  // SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xCC, 0x00, 0xFF);
-  // block.x = food.x * block.w;
-  // block.y = food.y * block.h;
-  // SDL_RenderFillRect(sdl_renderer, &block);
-
-  // // Render snake's body
-  // SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-  // for (SDL_Point const &point : snake.body) {
-  //   block.x = point.x * block.w;
-  //   block.y = point.y * block.h;
-  //   SDL_RenderFillRect(sdl_renderer, &block);
-  // }
-
-  // // Render snake's head
-  // block.x = static_cast<int>(snake.head_x) * block.w;
-  // block.y = static_cast<int>(snake.head_y) * block.h;
-  // if (snake.alive) {
-  //   SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x7A, 0xCC, 0xFF);
-  // } else {
-  //   SDL_SetRenderDrawColor(sdl_renderer, 0xFF, 0x00, 0x00, 0xFF);
-  // }
-  // SDL_RenderFillRect(sdl_renderer, &block);
-
-  // Update Screen
+  // Render texture
+  SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
+  // Render screen
   SDL_RenderPresent(sdl_renderer);
 }
 

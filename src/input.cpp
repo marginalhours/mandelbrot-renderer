@@ -2,27 +2,42 @@
 #include "SDL.h"
 #include <iostream>
 
-void Input::HandleInput(bool &running) const {
+void Input::HandleInput(Mandelbrot &instance) const {
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     if (e.type == SDL_QUIT) {
-      running = false;
+      instance.stop();
     } else if (e.type == SDL_KEYDOWN) {
       switch (e.key.keysym.sym) {
-      case SDLK_UP:
+      case SDLK_UP: {
+        instance.moveUp();
         break;
-
-      case SDLK_DOWN:
+      }
+      case SDLK_DOWN: {
+        instance.moveDown();
         break;
-
-      case SDLK_LEFT:
+      }
+      case SDLK_LEFT: {
+        instance.moveLeft();
         break;
-
-      case SDLK_RIGHT:
+      }
+      case SDLK_RIGHT: {
+        instance.moveRight();
         break;
-
-      case SDLK_ESCAPE:
-        running = false;
+      }
+      case SDLK_PLUS:
+      case SDLK_EQUALS: {
+        instance.zoomIn();
+        break;
+      }
+      case SDLK_MINUS: {
+        instance.zoomOut();
+        break;
+      }
+      case SDLK_ESCAPE: {
+        instance.stop();
+        break;
+      }
       }
     }
   }

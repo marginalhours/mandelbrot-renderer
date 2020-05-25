@@ -4,12 +4,15 @@
 #include <iostream>
 
 int main() {
-  constexpr std::size_t kScreenWidth{800};
-  constexpr std::size_t kScreenHeight{600};
+  unsigned int screen_width = 800;
+  unsigned int screen_height = 600;
 
-  Renderer renderer(kScreenWidth, kScreenHeight);
-  Input Input;
+  Renderer renderer(screen_width, screen_height);
+  Input input;
   Mandelbrot mandelbrot;
-  mandelbrot.Run(Input, renderer);
+
+  mandelbrot.resetBounds();
+  mandelbrot.run(input, renderer);
+
   return 0;
 }
