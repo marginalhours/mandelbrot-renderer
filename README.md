@@ -1,6 +1,14 @@
 # Mandelbrot Renderer
 
-This is a C++ renderer of the Mandelbrot set, using SDL.
+This is an interactive C++ renderer of the Mandelbrot set, using SDL.
+
+## File and class structure
+
+- `main.cpp` -- entry point. instantiates a `Renderer`, an `Input` handler, and a `Mandelbrot` object
+- `renderer.cpp` / `renderer.h` -- manages an SDL window for displaying the results
+- `input.cpp` / `input.h` -- handles keyboard input from the user to pan and zoom.
+- `mandelbrot.cpp` / `mandelbrot.h` -- handles calculating the colour values of the
+  individual screen pixels.
 
 ## Dependencies for Running Locally
 * cmake >= 3.7

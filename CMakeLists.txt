@@ -12,6 +12,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS} src)
 
-add_executable(Mandelbrot src/main.cpp)
+add_executable(Mandelbrot src/main.cpp src/input.cpp src/mandelbrot.cpp src/renderer.cpp)
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 target_link_libraries(Mandelbrot ${SDL2_LIBRARIES})
