@@ -20,6 +20,40 @@ inline Uint32 colorFromIterations(unsigned int iterations,
   return 0xff000000 | r << 16 | g << 8 | b;
 }
 
+void updatePixelsInRange(std::vector<Uint32> &pixels, RenderOptions options) {
+
+  double x_range = options.x_max - options.x_min;
+  double y_range = options.y_max - options.y_min;
+
+  for (auto j = options.first_row; j < options.last_row; j++) {
+    for (auto i = 0; i < options.screen_width; i++) {
+      std::complex<double> c{
+          options.x_min + (((double)i / options.screen_width) * (x_range)),
+          options.y_min + (((double)j / options.screen_height) * (y_range))};
+
+      std::complex<double> z{0, 0};
+
+      unsigned int iteration = 0;
+
+      for (iteration = 0; iteration < options.max_iterations; iteration++) {
+
+        z = (z * z) + c; // You love to see it
+
+        if (abs(z) >= 2.0) {
+          break;
+        }
+      }
+
+      if (iteration == options.max_iterations) {
+        pixels[(options.screen_width * j) + i] = 0xff000000;
+      } else {
+        pixels[(options.screen_width * j) + i] =
+            colorFromIterations(iteration, options.max_iterations);
+      }
+    }
+  }
+}
+
 void Mandelbrot::resetBounds() {
   /* reset image bounds */
   zoom = 1.0;
@@ -89,8 +123,8 @@ void Mandelbrot::onMouseUp(int x, int y) {
   int y_mid = y_start + ((float)(y_end - y_start) / 2.0);
 
   // get new center
-  center_x = min_x + (((float)x_mid / (float)screen_width) * (max_x - min_x));
-  center_y = min_y + (((float)y_mid / (float)screen_height) * (max_y - min_y));
+  center_x = x_min + (((float)x_mid / (float)screen_width) * (x_max - x_min));
+  center_y = y_min + (((float)y_mid / (float)screen_height) * (y_max - y_min));
 
   // set zoom based on hypotenuse of zoom rectangle
   double zoom_hypotenuse = sqrt((x_end - x_start) * (x_end - x_start) +
@@ -121,10 +155,10 @@ void Mandelbrot::onMouseMove(int x, int y) {
 }
 
 void Mandelbrot::setBoundsFromState() {
-  min_x = center_x - (zoom * (x_range / 2.0));
-  max_x = center_x + (zoom * (x_range / 2.0));
-  min_y = center_y - (zoom * (y_range / 2.0));
-  max_y = center_y + (zoom * (y_range / 2.0));
+  x_min = center_x - (zoom * (x_range / 2.0));
+  x_max = center_x + (zoom * (x_range / 2.0));
+  y_min = center_y - (zoom * (y_range / 2.0));
+  y_max = center_y + (zoom * (y_range / 2.0));
 
   dirty = true;
 }
@@ -170,44 +204,21 @@ void Mandelbrot::recalculate(std::vector<Uint32> &pixels,
   auto thread_count = std::thread::hardware_concurrency();
 
   for (int i = 0; i < thread_count; i++) {
-    unsigned int first_row = ((double)screen_height / (double)thread_count) * i;
-    unsigned int last_row =
-        ((double)screen_height / (double)thread_count) * (i + 1);
-    threads.emplace_back(std::thread(&Mandelbrot::updatePixelsInRange, this,
-                                     std::ref(pixels), first_row, last_row));
+    RenderOptions r{.first_row = (i * screen_height) / thread_count,
+                    .last_row = ((i + 1) * screen_height) / thread_count,
+                    .max_iterations = max_iterations,
+                    .screen_width = screen_width,
+                    .screen_height = screen_height,
+                    .x_min = x_min,
+                    .x_max = x_max,
+                    .y_min = y_min,
+                    .y_max = y_max};
+
+    threads.emplace_back(
+        std::thread(updatePixelsInRange, std::ref(pixels), std::move(r)));
   }
 
   for (auto &t : threads) {
     t.join();
-  }
-}
-
-void Mandelbrot::updatePixelsInRange(std::vector<Uint32> &pixels,
-                                     unsigned int start_y, unsigned int end_y) {
-  for (auto j = start_y; j < end_y; j++) {
-    for (auto i = 0; i < screen_width; i++) {
-      std::complex<double> c{
-          min_x + (((double)i / screen_width) * (max_x - min_x)),
-          min_y + (((double)j / screen_height) * (max_y - min_y))};
-
-      std::complex<double> z{0, 0};
-
-      unsigned int iteration = 0;
-
-      for (iteration = 0; iteration < max_iterations; iteration++) {
-        z = (z * z) + c;
-
-        if (abs(z) >= 2.0) {
-          break;
-        }
-      }
-
-      if (iteration == max_iterations) {
-        pixels[(screen_width * j) + i] = 0xff000000;
-      } else {
-        pixels[(screen_width * j) + i] =
-            colorFromIterations(iteration, max_iterations);
-      }
-    }
   }
 }

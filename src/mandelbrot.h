@@ -10,6 +10,20 @@
 // forward declaration for use in function signature
 class Input;
 
+// A RenderOptions object contains information for redrawing a region of the
+// image on the canvas.
+struct RenderOptions {
+  unsigned int first_row; /* first row of pixels to calculate */
+  unsigned int last_row;  /* last row of pixels to calculate */
+  unsigned int max_iterations;
+  unsigned int screen_width;
+  unsigned int screen_height;
+  double x_min;
+  double x_max;
+  double y_min;
+  double y_max;
+};
+
 class Mandelbrot {
 public:
   Mandelbrot(unsigned int screen_width, unsigned int screen_height)
@@ -43,10 +57,10 @@ private:
   double y_range = 2.5;
   double center_x = -1.0;
   double center_y = 0.0;
-  double min_x = -2.5;
-  double max_x = 0.5;
-  double min_y = -1.25;
-  double max_y = 1.25;
+  double x_min = -2.5;
+  double x_max = 0.5;
+  double y_min = -1.25;
+  double y_max = 1.25;
   double zoom = 1.0;
 
   // rendering threads
@@ -68,10 +82,6 @@ private:
   // method: recalculate colour of each pixel
   void recalculate(std::vector<Uint32> &pixels, unsigned int screen_width,
                    unsigned int screen_height);
-
-  // method: recalculate colours of pixels within a specific y-range
-  void updatePixelsInRange(std::vector<Uint32> &pixels, unsigned int start_row,
-                           unsigned int end_rows);
 
   void setBoundsFromState();
 };
