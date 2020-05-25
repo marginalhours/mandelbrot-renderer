@@ -5,6 +5,7 @@
 #include <cmath>
 #include <complex>
 #include <iostream>
+#include <optional>
 
 /* Draw at 24 frames per second */
 constexpr int MILLISECONDS_BETWEEN_FRAMES = 1000 / 24;
@@ -58,12 +59,16 @@ void updatePixelsInRange(RenderOptions options) {
 
 void renderLoop(MessageQueue<RenderOptions> &queue, bool &running) {
   while (running) {
-    updatePixelsInRange(queue.receive());
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::optional<RenderOptions> options = queue.receive();
+    if (options) {
+      updatePixelsInRange(options.value());
+    }
+    std::cout << running << std::endl;
   }
 }
 
 Mandelbrot::~Mandelbrot() {
+  std::cout << "Mandelbrot destructor" << std::endl;
   for (auto &t : render_threads) {
     t.join();
   }

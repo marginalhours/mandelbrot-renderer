@@ -5,6 +5,7 @@
 #include <deque>
 #include <iostream>
 #include <mutex>
+#include <optional>
 
 /**
  * A simple message-queue for use with concurrent rendering
@@ -12,18 +13,27 @@
 template <class T> class MessageQueue {
 public:
   void send(T &&msg);
-  T receive();
+  std::optional<T> receive();
   void clear();
+  struct Stopped {};
+  void stop() { running = false; }
 
 private:
   std::deque<T> _queue;
   std::condition_variable _cond;
   std::mutex _mutex;
+  bool running{true};
 };
 
-template <typename T> T MessageQueue<T>::receive() {
+template <typename T> std::optional<T> MessageQueue<T>::receive() {
   std::unique_lock<std::mutex> lock(_mutex);
-  _cond.wait(lock, [this] { return !_queue.empty(); });
+  _cond.wait(lock);
+
+  // When the queue is empty, return nothing so that the task can check if
+  // it's still supposed to be running
+  if (_queue.empty()) {
+    return {};
+  }
 
   T t = std::move(_queue.back());
   _queue.pop_back();
