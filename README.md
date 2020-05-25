@@ -31,3 +31,18 @@ This is an interactive C++ renderer of the Mandelbrot set, using SDL.
 2. Make a build directory in the top level directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./MandelbrotRenderer`.
+
+## Viewer controls:
+
+### Mouse
+
+Click + drag to draw a rectangle to zoom into.
+
+### Keyboard
+
+- <kbd>space</kbd> -- reset viewer
+- <kbd>+</kbd>/<kbd>=</kbd> -- zoom in
+- <kbd>-</kbd> -- zoom out
+- <kbd>.</kbd> -- increase detail (iterations)
+- <kbd>,</kbd> -- decrease detail (iterations)
+- <kbd>↑</kbd>, <kbd>←</kbd>, <kbd>↓</kbd>, <kbd>→</kbd> -- pan image

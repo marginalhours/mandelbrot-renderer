@@ -1,7 +1,11 @@
 #include "mandelbrot.h"
 #include "SDL.h"
+#include <algorithm>
+#include <cmath>
 #include <complex>
 #include <iostream>
+
+constexpr int MILLISECONDS_BETWEEN_FRAMES = 1000 / 24;
 
 inline Uint32 colorFromIterations(unsigned int iterations,
                                   unsigned max_iterations) {
@@ -54,6 +58,68 @@ void Mandelbrot::moveRight() {
   setBoundsFromZoom();
 }
 
+void Mandelbrot::increaseIterations() {
+  max_iterations += 10;
+  dirty = true;
+}
+
+void Mandelbrot::decreaseIterations() {
+  if (max_iterations > 0) {
+    max_iterations -= 10;
+    dirty = true;
+  }
+}
+
+void Mandelbrot::onMouseDown(int x, int y) {
+  selection.x = x;
+  selection.y = y;
+  selection.w = 0;
+  selection.h = 0;
+
+  dragging = true;
+}
+
+void Mandelbrot::onMouseUp(int x, int y) {
+  int x_start = std::min(x, selection.x);
+  int x_end = std::max(x, selection.x);
+  int y_start = std::min(y, selection.y);
+  int y_end = std::max(y, selection.y);
+
+  int x_mid = x_start + ((float)(x_end - x_start) / 2.0);
+  int y_mid = y_start + ((float)(y_end - y_start) / 2.0);
+
+  // get new center
+  center_x = min_x + (((float)x_mid / (float)screen_width) * (max_x - min_x));
+  center_y = min_y + (((float)y_mid / (float)screen_height) * (max_y - min_y));
+
+  // set zoom based on hypotenuse of zoom rectangle
+  double zoom_hypotenuse = sqrt((x_end - x_start) * (x_end - x_start) +
+                                (y_end - y_start) * (y_end - y_start));
+  double window_hypotenuse =
+      sqrt(screen_width * screen_width + screen_height * screen_height);
+
+  zoom *= zoom_hypotenuse / window_hypotenuse;
+
+  // Set bounds based on new center and zoom
+  setBoundsFromZoom();
+
+  // reset selection rectangle to nothing
+  selection.x = 0;
+  selection.y = 0;
+  selection.w = 0;
+  selection.h = 0;
+
+  dragging = false;
+  dirty = true;
+}
+
+void Mandelbrot::onMouseMove(int x, int y) {
+  if (dragging) {
+    selection.w = x - selection.x;
+    selection.h = y - selection.y;
+  }
+}
+
 void Mandelbrot::setBoundsFromZoom() {
   min_x = center_x - (zoom * (x_range / 2.0));
   max_x = center_x + (zoom * (x_range / 2.0));
@@ -69,28 +135,29 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
 
   running = true;
 
+  Uint32 prev_frame_end = SDL_GetTicks();
+
   while (running) {
     Input.HandleInput(*this);
 
+    Uint32 frame_start = SDL_GetTicks();
+
     if (dirty) {
-      std::cout << "Rerendering...";
-      std::cout.flush();
-
-      Uint32 frame_start = SDL_GetTicks();
-
-      // recalculate pixels
+      /* if the dirty flag is set, we must recalculate the colour values
+      for each pixel */
       recalculate(renderer.getPixels(), renderer.getScreenWidth(),
                   renderer.getScreenHeight());
 
-      // rerender pixels
-      renderer.Render();
+      Uint32 calculate_duration = SDL_GetTicks() - frame_start;
 
-      Uint32 frame_duration = SDL_GetTicks() - frame_start;
-
-      renderer.UpdateWindowTitle(frame_duration);
+      renderer.updateWindowTitle(calculate_duration);
       dirty = false;
-      std::cout << " done in " << std::to_string(frame_duration) << "ms"
-                << std::endl;
+    }
+
+    /* Refresh the screen periodically -- useful for showing thread progress */
+    if (SDL_GetTicks() - prev_frame_end > MILLISECONDS_BETWEEN_FRAMES) {
+      renderer.render(selection);
+      prev_frame_end = SDL_GetTicks();
     }
   }
 }
@@ -107,7 +174,6 @@ void Mandelbrot::recalculate(std::vector<Uint32> &pixels,
 
       std::complex<double> z{0, 0};
 
-      unsigned int max_iterations = 50;
       unsigned int iteration = 0;
 
       for (iteration = 0; iteration < max_iterations; iteration++) {

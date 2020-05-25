@@ -10,8 +10,8 @@ public:
   Renderer(unsigned int screen_width, unsigned int screen_height);
   ~Renderer();
 
-  void Render();
-  void UpdateWindowTitle(unsigned int render_time);
+  void render(SDL_Rect selection);
+  void updateWindowTitle(unsigned int render_time);
 
   // get mutable access to pixel data
   std::vector<Uint32> &getPixels() { return pixels; };

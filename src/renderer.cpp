@@ -42,7 +42,7 @@ Renderer::Renderer(unsigned int screen_width, unsigned int screen_height)
   pixels = std::vector<Uint32>(screen_height * screen_width, 0);
 
   // initial render (to make screen black);
-  Render();
+  render(SDL_Rect{0, 0, 0, 0});
 }
 
 Renderer::~Renderer() {
@@ -51,7 +51,7 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
-void Renderer::Render() {
+void Renderer::render(SDL_Rect selection) {
 
   // Apply pixels vector to texture
   SDL_UpdateTexture(sdl_texture, NULL, &pixels[0],
@@ -59,13 +59,22 @@ void Renderer::Render() {
 
   // Clear renderer
   SDL_RenderClear(sdl_renderer);
-  // Render texture
+  // Render texture to screen
   SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
+
+  // Render dragging box if present
+  SDL_SetRenderDrawBlendMode(sdl_renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawColor(sdl_renderer, 200, 200, 200, 31);
+  SDL_RenderFillRect(sdl_renderer, &selection);
+
+  SDL_SetRenderDrawColor(sdl_renderer, 200, 200, 200, 127);
+  SDL_RenderDrawRect(sdl_renderer, &selection);
+
   // Render screen
   SDL_RenderPresent(sdl_renderer);
 }
 
-void Renderer::UpdateWindowTitle(unsigned int render_time) {
+void Renderer::updateWindowTitle(unsigned int render_time) {
   std::string title{"Mandelbrot -- last render " + std::to_string(render_time)};
   SDL_SetWindowTitle(sdl_window, title.c_str());
 }
