@@ -3,6 +3,7 @@
 
 #include "SDL.h"
 #include "input.h"
+#include "message_queue.h"
 #include "renderer.h"
 #include <future>
 #include <random>
@@ -13,8 +14,9 @@ class Input;
 // A RenderOptions object contains information for redrawing a region of the
 // image on the canvas.
 struct RenderOptions {
-  unsigned int first_row; /* first row of pixels to calculate */
-  unsigned int last_row;  /* last row of pixels to calculate */
+  std::vector<Uint32> &pixels; /* pixels to update */
+  unsigned int first_row;      /* first row of pixels to calculate */
+  unsigned int last_row;       /* last row of pixels to calculate */
   unsigned int max_iterations;
   unsigned int screen_width;
   unsigned int screen_height;
@@ -26,10 +28,13 @@ struct RenderOptions {
 
 class Mandelbrot {
 public:
-  Mandelbrot(unsigned int screen_width, unsigned int screen_height)
-      : screen_width(screen_width), screen_height(screen_height) {
+  Mandelbrot(unsigned int screen_width, unsigned int screen_height,
+             unsigned int thread_count)
+      : screen_width(screen_width), screen_height(screen_height),
+        thread_count(thread_count) {
     resetBounds();
   };
+  ~Mandelbrot();
 
   void run(Input const &input, Renderer &renderer);
 
@@ -48,6 +53,9 @@ public:
   void decreaseIterations();
 
 private:
+  // number of available threads
+  unsigned int thread_count;
+
   // screen size
   unsigned int screen_width;
   unsigned int screen_height;
@@ -64,7 +72,9 @@ private:
   double zoom = 1.0;
 
   // rendering threads
-  std::vector<std::future<void>> render_threads;
+  std::vector<std::thread> render_threads;
+  // queue for tasking render threads
+  MessageQueue<RenderOptions> queue;
 
   // maximum iterations
   unsigned int max_iterations = 50;
@@ -79,11 +89,12 @@ private:
   // flag for mouse dragging
   bool dragging{false};
 
-  // method: recalculate colour of each pixel
-  void recalculate(std::vector<Uint32> &pixels, unsigned int screen_width,
-                   unsigned int screen_height);
-
+  // method: dispatch render tasks to queue
+  void dispatchRender(std::vector<Uint32> &pixels);
+  // method: reset bounds of drawing
   void setBoundsFromState();
+  // method: purge render queue and set flag to recalculate pixels
+  void setDirty();
 };
 
 #endif

@@ -1,15 +1,17 @@
 #include "mandelbrot.h"
 #include "SDL.h"
+#include "message_queue.h"
 #include <algorithm>
 #include <cmath>
 #include <complex>
 #include <iostream>
 
+/* Draw at 24 frames per second */
 constexpr int MILLISECONDS_BETWEEN_FRAMES = 1000 / 24;
 
 inline Uint32 colorFromIterations(unsigned int iterations,
                                   unsigned max_iterations) {
-  // we use the bernstein polynomials for colouring
+  // we use the bernstein polynomials for colouring, for smoothness
   double f = (double)iterations / (double)max_iterations;
   double h = (1 - f);
 
@@ -20,7 +22,7 @@ inline Uint32 colorFromIterations(unsigned int iterations,
   return 0xff000000 | r << 16 | g << 8 | b;
 }
 
-void updatePixelsInRange(std::vector<Uint32> &pixels, RenderOptions options) {
+void updatePixelsInRange(RenderOptions options) {
 
   double x_range = options.x_max - options.x_min;
   double y_range = options.y_max - options.y_min;
@@ -45,17 +47,29 @@ void updatePixelsInRange(std::vector<Uint32> &pixels, RenderOptions options) {
       }
 
       if (iteration == options.max_iterations) {
-        pixels[(options.screen_width * j) + i] = 0xff000000;
+        options.pixels[(options.screen_width * j) + i] = 0xff000000;
       } else {
-        pixels[(options.screen_width * j) + i] =
+        options.pixels[(options.screen_width * j) + i] =
             colorFromIterations(iteration, options.max_iterations);
       }
     }
   }
 }
 
+void renderLoop(MessageQueue<RenderOptions> &queue, bool &running) {
+  while (running) {
+    updatePixelsInRange(queue.receive());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+}
+
+Mandelbrot::~Mandelbrot() {
+  for (auto &t : render_threads) {
+    t.join();
+  }
+}
+
 void Mandelbrot::resetBounds() {
-  /* reset image bounds */
   zoom = 1.0;
   center_y = 0.0;
   center_x = -1.0;
@@ -94,13 +108,13 @@ void Mandelbrot::moveRight() {
 
 void Mandelbrot::increaseIterations() {
   max_iterations += 10;
-  dirty = true;
+  setDirty();
 }
 
 void Mandelbrot::decreaseIterations() {
   if (max_iterations > 0) {
     max_iterations -= 10;
-    dirty = true;
+    setDirty();
   }
 }
 
@@ -143,7 +157,16 @@ void Mandelbrot::onMouseUp(int x, int y) {
   selection.w = 0;
   selection.h = 0;
 
+  // we are: no longer dragging
   dragging = false;
+  // we are also: in need of a redraw
+  setDirty();
+}
+
+void Mandelbrot::setDirty() {
+  // stop any pending render tasks
+  queue.clear();
+  // set dirty flag
   dirty = true;
 }
 
@@ -160,14 +183,20 @@ void Mandelbrot::setBoundsFromState() {
   y_min = center_y - (zoom * (y_range / 2.0));
   y_max = center_y + (zoom * (y_range / 2.0));
 
-  dirty = true;
+  setDirty();
 }
 
 void Mandelbrot::stop() { running = false; }
 
 void Mandelbrot::run(Input const &Input, Renderer &renderer) {
 
+  // start running
   running = true;
+
+  for (auto thread_index = 0; thread_index < thread_count; thread_index++) {
+    render_threads.emplace_back(
+        std::thread(&renderLoop, std::ref(queue), std::ref(running)));
+  }
 
   Uint32 prev_frame_end = SDL_GetTicks();
 
@@ -179,8 +208,7 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
     if (dirty) {
       /* if the dirty flag is set, we must recalculate the colour values
       for each pixel */
-      recalculate(renderer.getPixels(), renderer.getScreenWidth(),
-                  renderer.getScreenHeight());
+      dispatchRender(renderer.getPixels());
 
       Uint32 calculate_duration = SDL_GetTicks() - frame_start;
 
@@ -196,15 +224,12 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
   }
 }
 
-void Mandelbrot::recalculate(std::vector<Uint32> &pixels,
-                             unsigned int screen_width,
-                             unsigned int screen_height) {
-  std::vector<std::thread> threads;
-
-  auto thread_count = std::thread::hardware_concurrency();
-
+void Mandelbrot::dispatchRender(std::vector<Uint32> &pixels) {
+  // Split screen pixels into equally-sized chunks and get threads to
+  // recalculate
   for (int i = 0; i < thread_count; i++) {
-    RenderOptions r{.first_row = (i * screen_height) / thread_count,
+    RenderOptions r{.pixels = pixels,
+                    .first_row = (i * screen_height) / thread_count,
                     .last_row = ((i + 1) * screen_height) / thread_count,
                     .max_iterations = max_iterations,
                     .screen_width = screen_width,
@@ -214,11 +239,6 @@ void Mandelbrot::recalculate(std::vector<Uint32> &pixels,
                     .y_min = y_min,
                     .y_max = y_max};
 
-    threads.emplace_back(
-        std::thread(updatePixelsInRange, std::ref(pixels), std::move(r)));
-  }
-
-  for (auto &t : threads) {
-    t.join();
+    queue.send(std::move(r));
   }
 }
