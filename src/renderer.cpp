@@ -60,7 +60,7 @@ void Renderer::captureScreenshot() {
   SDL_RenderReadPixels(sdl_renderer, NULL, SDL_PIXELFORMAT_ARGB8888,
                        screenshot->pixels, screenshot->pitch);
 
-  // Figure out the next free screenshot path will be
+  // Figure out where the next free screenshot path is
   unsigned int next_screenshot_slot = 0;
   std::filesystem::path output_path{
       "screenshot-" + std::to_string(next_screenshot_slot) + ".bmp"};
@@ -111,5 +111,5 @@ void Renderer::updateWindowTitle(unsigned int iterations, double x_min,
   SDL_SetWindowTitle(sdl_window, title.c_str());
 
   // Log title also to console for debugging purposes
-  std::cout << title << std::endl;
+  // std::cout << title << std::endl;
 }

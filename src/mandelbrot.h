@@ -11,10 +11,17 @@
 // forward declaration for use in function signature
 class Input;
 
-// A RenderOptions object contains information for redrawing a region of the
-// image on the canvas.
+/** A RenderOptions object contains information for redrawing a region of the
+ * image on the canvas.
+ * The strategy taken is for each thread (for n threads) to compute only rows
+ * of pixels given by k*n + r, where r is in range 0..n-1.
+ * This splits the work out very evenly and also results in a cool interlacing
+ * effect when something goes wrong.
+ */
 struct RenderOptions {
   std::vector<Uint32> &pixels; /* pixels to update */
+  unsigned int offset;         /* which rows to render */
+  unsigned int skip_count;     /* how many rows to skip between rendered rows */
   unsigned int first_row;      /* first row of pixels to calculate */
   unsigned int last_row;       /* last row of pixels to calculate */
   unsigned int max_iterations;

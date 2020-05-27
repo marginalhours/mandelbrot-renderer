@@ -53,7 +53,7 @@ template <typename T> void MessageQueue<T>::clear() {
 
   _queue.clear();
 
-  _cond.notify_one();
+  _cond.notify_all();
 }
 
 #endif

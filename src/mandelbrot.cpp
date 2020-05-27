@@ -5,7 +5,10 @@
 #include <cmath>
 #include <complex>
 #include <iostream>
+#include <mutex>
 #include <optional>
+
+std::mutex _ioMutex;
 
 /* Draw at 24 frames per second */
 constexpr int MILLISECONDS_BETWEEN_FRAMES = 1000 / 24;
@@ -24,11 +27,18 @@ inline Uint32 colorFromIterations(unsigned int iterations,
 }
 
 void updatePixelsInRange(RenderOptions options) {
+  _ioMutex.lock();
+
+  std::cout << "updating k * " << options.skip_count << " + " << options.offset
+            << std::endl;
+
+  _ioMutex.unlock();
 
   double x_range = options.x_max - options.x_min;
   double y_range = options.y_max - options.y_min;
 
-  for (auto j = options.first_row; j < options.last_row; j++) {
+  for (auto j = options.offset; j < options.screen_height;
+       j += options.skip_count) {
     for (auto i = 0; i < options.screen_width; i++) {
       std::complex<double> c{
           options.x_min + (((double)i / options.screen_width) * (x_range)),
@@ -68,6 +78,8 @@ void renderLoop(MessageQueue<RenderOptions> &queue, bool &running) {
 
 Mandelbrot::~Mandelbrot() {
   std::cout << "Mandelbrot destructor" << std::endl;
+  queue.clear();
+
   for (auto &t : render_threads) {
     t.join();
   }
@@ -169,8 +181,6 @@ void Mandelbrot::onMouseUp(int x, int y) {
 }
 
 void Mandelbrot::setDirty() {
-  // stop any pending render tasks
-  queue.clear();
   // set dirty flag
   dirty = true;
 }
@@ -236,12 +246,18 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
 }
 
 void Mandelbrot::dispatchRender(std::vector<Uint32> &pixels) {
+
+  // clear any pending render tasks
+  queue.clear();
+
   // Split screen pixels into equally-sized chunks and get threads to
   // recalculate
-  for (int i = 0; i < thread_count; i++) {
+  for (unsigned int i = 0; i < thread_count; i++) {
     RenderOptions r{.pixels = pixels,
-                    .first_row = (i * screen_height) / thread_count,
-                    .last_row = ((i + 1) * screen_height) / thread_count,
+                    .offset = i,
+                    .skip_count = thread_count,
+                    // .first_row = (i * screen_height) / thread_count,
+                    // .last_row = ((i + 1) * screen_height) / thread_count,
                     .max_iterations = max_iterations,
                     .screen_width = screen_width,
                     .screen_height = screen_height,
