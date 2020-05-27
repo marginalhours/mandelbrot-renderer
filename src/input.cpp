@@ -2,7 +2,7 @@
 #include "SDL.h"
 #include <iostream>
 
-void Input::HandleInput(Mandelbrot &instance) const {
+void Input::handleInput(Mandelbrot &instance, Renderer &renderer) const {
   SDL_Event e;
 
   while (SDL_PollEvent(&e)) {
@@ -65,6 +65,10 @@ void Input::HandleInput(Mandelbrot &instance) const {
         break;
       }
       case SDLK_SPACE: {
+        renderer.captureScreenshot();
+        break;
+      }
+      case SDLK_r: {
         instance.resetBounds();
         break;
       }

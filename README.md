@@ -41,7 +41,8 @@ Click + drag to draw a rectangle to zoom into.
 
 ### Keyboard
 
-- <kbd>space</kbd> -- reset viewer
+- <kbd>space</kbd> -- take screenshot
+- <kbd>r</kbd> -- reset viewer
 - <kbd>+</kbd>/<kbd>=</kbd> -- zoom in
 - <kbd>-</kbd> -- zoom out
 - <kbd>.</kbd> -- increase detail (iterations)

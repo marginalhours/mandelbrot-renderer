@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -51,6 +52,31 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
+void Renderer::captureScreenshot() {
+  SDL_Surface *screenshot =
+      SDL_CreateRGBSurface(0, screen_width, screen_height, 32, 0x00ff0000,
+                           0x0000ff00, 0x000000ff, 0xff000000);
+
+  SDL_RenderReadPixels(sdl_renderer, NULL, SDL_PIXELFORMAT_ARGB8888,
+                       screenshot->pixels, screenshot->pitch);
+
+  // Figure out the next free screenshot path will be
+  unsigned int next_screenshot_slot = 0;
+  std::filesystem::path output_path{
+      "screenshot-" + std::to_string(next_screenshot_slot) + ".bmp"};
+
+  while (std::filesystem::exists(output_path)) {
+    next_screenshot_slot++;
+    output_path = std::filesystem::path(
+        "screenshot-" + std::to_string(next_screenshot_slot) + ".bmp");
+  }
+
+  SDL_SaveBMP(screenshot, output_path.c_str());
+  SDL_FreeSurface(screenshot);
+
+  std::cout << "Wrote out " << output_path << std::endl;
+}
+
 void Renderer::render(SDL_Rect selection) {
 
   // Apply pixels vector to texture
@@ -74,7 +100,16 @@ void Renderer::render(SDL_Rect selection) {
   SDL_RenderPresent(sdl_renderer);
 }
 
-void Renderer::updateWindowTitle(unsigned int render_time) {
-  std::string title{"Mandelbrot -- last render " + std::to_string(render_time)};
+void Renderer::updateWindowTitle(unsigned int iterations, double x_min,
+                                 double x_max, double y_min, double y_max) {
+  std::string title{std::to_string(iterations) + " iterations -- top left (" +
+                    std::to_string(x_min) + "," + std::to_string(y_min) +
+                    ") bottom right (" + std::to_string(x_max) + "," +
+                    std::to_string(y_max) + ")"};
+
+  // Change window title to reflect current view
   SDL_SetWindowTitle(sdl_window, title.c_str());
+
+  // Log title also to console for debugging purposes
+  std::cout << title << std::endl;
 }

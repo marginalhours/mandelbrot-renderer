@@ -5,10 +5,11 @@
 
 // forward declaration for use in function signature
 class Mandelbrot;
+class Renderer;
 
 class Input {
 public:
-  void HandleInput(Mandelbrot &instance) const;
+  void handleInput(Mandelbrot &instance, Renderer &renderer) const;
 };
 
 #endif

@@ -63,7 +63,6 @@ void renderLoop(MessageQueue<RenderOptions> &queue, bool &running) {
     if (options) {
       updatePixelsInRange(options.value());
     }
-    std::cout << running << std::endl;
   }
 }
 
@@ -78,6 +77,7 @@ void Mandelbrot::resetBounds() {
   zoom = 1.0;
   center_y = 0.0;
   center_x = -1.0;
+  max_iterations = 50;
   setBoundsFromState();
 }
 
@@ -206,7 +206,7 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
   Uint32 prev_frame_end = SDL_GetTicks();
 
   while (running) {
-    Input.HandleInput(*this);
+    Input.handleInput(*this, renderer);
 
     Uint32 frame_start = SDL_GetTicks();
 
@@ -217,7 +217,7 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
 
       Uint32 calculate_duration = SDL_GetTicks() - frame_start;
 
-      renderer.updateWindowTitle(calculate_duration);
+      renderer.updateWindowTitle(max_iterations, x_min, x_max, y_min, y_max);
       dirty = false;
     }
 
