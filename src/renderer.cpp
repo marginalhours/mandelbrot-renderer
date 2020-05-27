@@ -102,9 +102,9 @@ void Renderer::render(SDL_Rect selection) {
 
 void Renderer::updateWindowTitle(unsigned int iterations, double x_min,
                                  double x_max, double y_min, double y_max) {
-  std::string title{std::to_string(iterations) + " iterations -- top left (" +
+  std::string title{std::to_string(iterations) + " iterations -- top-left@(" +
                     std::to_string(x_min) + "," + std::to_string(y_min) +
-                    ") bottom right (" + std::to_string(x_max) + "," +
+                    ") -- bottom-right@(" + std::to_string(x_max) + "," +
                     std::to_string(y_max) + ")"};
 
   // Change window title to reflect current view
