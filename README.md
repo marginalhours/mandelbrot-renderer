@@ -31,7 +31,16 @@ This is an interactive C++ renderer of the Mandelbrot set, using SDL for output
 1. Clone this repo.
 2. Make a build directory in the top level directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
-4. Run it: `./MandelbrotRenderer`.
+4. Run it: `./Mandelbrot`.
+
+## Command-line flags
+
+The program supports the following command line flags:
+
+- `-h` / `--help`: prints help message and exits
+- `wx` / `--screen-width`: sets the image width in pixels
+- `-hx` / `--screen-height`: sets the image height in pixels
+- `-c` / `--concurrency`: set number of render threads. Default is number of cpu cores.
 
 ## Viewer controls:
 

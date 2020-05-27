@@ -221,10 +221,16 @@ void Mandelbrot::run(Input const &Input, Renderer &renderer) {
       dirty = false;
     }
 
+    Uint32 current_time = SDL_GetTicks();
+    Uint32 elapsed = current_time - prev_frame_end;
+
     /* Refresh the screen periodically -- useful for showing thread progress */
-    if (SDL_GetTicks() - prev_frame_end > MILLISECONDS_BETWEEN_FRAMES) {
+    if (elapsed > MILLISECONDS_BETWEEN_FRAMES) {
       renderer.render(selection);
-      prev_frame_end = SDL_GetTicks();
+      prev_frame_end = current_time;
+    } else {
+      /* Sleep main thread until next frame to minimize cpu usage */
+      SDL_Delay(MILLISECONDS_BETWEEN_FRAMES - elapsed);
     }
   }
 }

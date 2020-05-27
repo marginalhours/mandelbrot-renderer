@@ -18,20 +18,23 @@ void usage() {
             << "Optional parameters: " << std::endl
             << "\t-h/--help:"
             << " display this help message and exit" << std::endl
-            << "\t-w/--screen-width:"
+            << "\t-wx/--screen-width:"
             << " set screen width in pixels (default: 800)" << std::endl
-            << "\t-h/--screen-height:"
-            << " set screen height in pixels (default: 600)" << std::endl;
+            << "\t-hx/--screen-height:"
+            << " set screen height in pixels (default: 600)" << std::endl
+            << "\t-c/--concurrency:"
+            << " set concurrency (-1 to disable) (default: #cpu_cores)"
+            << std::endl;
 }
 
 /**
  * Sets the screen width and height based on user inputs if present
  */
 void setScreenDimensions(unsigned int &screen_width,
-                         unsigned int &screen_height, char *argv[], int argc) {
+                         unsigned int &screen_height, int argc, char *argv[]) {
   for (int i = 1; i < argc; i++) {
     if ((std::string(argv[i]) == "--screen-width" ||
-         std::string(argv[i]) == "-w") &&
+         std::string(argv[i]) == "-wx") &&
         (i + 1) < argc) {
       screen_width = std::stoi(argv[i + 1]);
     }
@@ -39,9 +42,26 @@ void setScreenDimensions(unsigned int &screen_width,
 
   for (int i = 1; i < argc; i++) {
     if ((std::string(argv[i]) == "--screen-height" ||
-         std::string(argv[i]) == "-h") &&
+         std::string(argv[i]) == "-hx") &&
         (i + 1) < argc) {
       screen_height = std::stoi(argv[i + 1]);
+    }
+  }
+}
+
+/**
+ * Sets the maximum concurrency based on user inputs if present.
+ */
+void setConcurrency(unsigned int &max_threads, int argc, char *argv[]) {
+  if (max_threads == 0) {
+    max_threads = 1;
+  }
+
+  for (int i = 1; i < argc; i++) {
+    if ((std::string(argv[i]) == "--concurrency" ||
+         std::string(argv[i]) == "-c") &&
+        (i + 1) < argc) {
+      max_threads = std::stoi(argv[i + 1]);
     }
   }
 }
@@ -57,7 +77,7 @@ int main(int argc, char *argv[]) {
   unsigned int screen_height = 600;
 
   try {
-    setScreenDimensions(screen_width, screen_height, argv, argc);
+    setScreenDimensions(screen_width, screen_height, argc, argv);
   } catch (...) {
     std::cout << "Error: Please provide integer arguments for screen width and "
                  "height."
@@ -66,6 +86,15 @@ int main(int argc, char *argv[]) {
   }
 
   unsigned int thread_count = std::thread::hardware_concurrency();
+
+  try {
+    setConcurrency(thread_count, argc, argv);
+  } catch (...) {
+    std::cout << "Error. Please provide integer argument for number of "
+                 "concurrent render threads"
+              << std::endl;
+    return 0;
+  }
 
   Renderer renderer(screen_width, screen_height);
   Mandelbrot mandelbrot(screen_width, screen_height, thread_count);
