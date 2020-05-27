@@ -15,7 +15,6 @@ public:
   void send(T &&msg);
   std::optional<T> receive();
   void clear();
-  struct Stopped {};
   void stop() { running = false; }
 
 private:
@@ -27,8 +26,7 @@ private:
 
 template <typename T> std::optional<T> MessageQueue<T>::receive() {
   std::unique_lock<std::mutex> lock(_mutex);
-  _cond.wait(lock);
-
+  _cond.wait(lock, [&] { return !_queue.empty(); });
   // When the queue is empty, return nothing so that the task can check if
   // it's still supposed to be running
   if (_queue.empty()) {

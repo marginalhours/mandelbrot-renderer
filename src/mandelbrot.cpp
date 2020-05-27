@@ -73,13 +73,18 @@ void renderLoop(MessageQueue<RenderOptions> &queue, bool &running) {
     if (options) {
       updatePixelsInRange(options.value());
     }
+    // otherwise, allow to re-enter while loop
+    // (if running is false, the thread should terminate)
   }
 }
 
 Mandelbrot::~Mandelbrot() {
-  std::cout << "Mandelbrot destructor" << std::endl;
+  // Clearing the queue means all the threads will wake up and recheck
+  // if they're supposed to be running
+  queue.stop();
   queue.clear();
 
+  // Wait for all render threads to exit (they might be mid-task)
   for (auto &t : render_threads) {
     t.join();
   }
@@ -256,8 +261,6 @@ void Mandelbrot::dispatchRender(std::vector<Uint32> &pixels) {
     RenderOptions r{.pixels = pixels,
                     .offset = i,
                     .skip_count = thread_count,
-                    // .first_row = (i * screen_height) / thread_count,
-                    // .last_row = ((i + 1) * screen_height) / thread_count,
                     .max_iterations = max_iterations,
                     .screen_width = screen_width,
                     .screen_height = screen_height,
