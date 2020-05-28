@@ -1,6 +1,6 @@
 #include "renderer.h"
 #include <cmath>
-#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -57,6 +57,15 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
+inline bool file_exists(const std::string &name) {
+  if (FILE *file = fopen(name.c_str(), "r")) {
+    fclose(file);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void Renderer::captureScreenshot() {
   SDL_Surface *screenshot =
       SDL_CreateRGBSurface(0, screen_width, screen_height, 32, 0x00ff0000,
@@ -67,13 +76,12 @@ void Renderer::captureScreenshot() {
 
   // Figure out where the next free screenshot path is
   unsigned int next_screenshot_slot = 0;
-  std::filesystem::path output_path{
-      "screenshot-" + std::to_string(next_screenshot_slot) + ".bmp"};
+  std::string output_path{"screenshot-" + std::to_string(next_screenshot_slot) +
+                          ".bmp"};
 
-  while (std::filesystem::exists(output_path)) {
+  while (file_exists(output_path)) {
     next_screenshot_slot++;
-    output_path = std::filesystem::path(
-        "screenshot-" + std::to_string(next_screenshot_slot) + ".bmp");
+    output_path = "screenshot-" + std::to_string(next_screenshot_slot) + ".bmp";
   }
 
   SDL_SaveBMP(screenshot, output_path.c_str());
