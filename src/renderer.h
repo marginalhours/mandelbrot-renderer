@@ -31,6 +31,8 @@ private:
 
   unsigned int screen_width;
   unsigned int screen_height;
+
+  int screenshot_state;
 };
 
 #endif

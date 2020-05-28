@@ -1,7 +1,12 @@
 #include "renderer.h"
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <string>
+
+#define _USE_MATH_DEFINES
+
+const unsigned int SCREENSHOT_FRAMES = 6;
 
 Renderer::Renderer(unsigned int screen_width, unsigned int screen_height)
     : screen_width(screen_width), screen_height(screen_height) {
@@ -75,6 +80,8 @@ void Renderer::captureScreenshot() {
   SDL_FreeSurface(screenshot);
 
   std::cout << "Wrote out " << output_path << std::endl;
+
+  screenshot_state = SCREENSHOT_FRAMES;
 }
 
 void Renderer::render(SDL_Rect selection) {
@@ -95,6 +102,17 @@ void Renderer::render(SDL_Rect selection) {
 
   SDL_SetRenderDrawColor(sdl_renderer, 200, 200, 200, 127);
   SDL_RenderDrawRect(sdl_renderer, &selection);
+
+  // Render screenshot box -- use sine to map remaining frames to a
+  // smooth curve from 0 to 1 to 0 again
+  if (screenshot_state > 0) {
+    double alpha_value = 127 * std::sin((SCREENSHOT_FRAMES - screenshot_state) *
+                                        (M_PI / SCREENSHOT_FRAMES));
+    SDL_Rect r{0, 0, (int)screen_width, (int)screen_height};
+    SDL_SetRenderDrawColor(sdl_renderer, 255, 255, 225, alpha_value);
+    SDL_RenderFillRect(sdl_renderer, &r);
+    screenshot_state -= 1;
+  }
 
   // Render screen
   SDL_RenderPresent(sdl_renderer);

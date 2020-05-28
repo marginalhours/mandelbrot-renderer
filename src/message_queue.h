@@ -26,7 +26,8 @@ private:
 
 template <typename T> std::optional<T> MessageQueue<T>::receive() {
   std::unique_lock<std::mutex> lock(_mutex);
-  _cond.wait(lock, [&] { return !_queue.empty(); });
+  // Wait 20 milliseconds for a task to become available
+  _cond.wait_for(lock, std::chrono::milliseconds(20));
   // When the queue is empty, return nothing so that the task can check if
   // it's still supposed to be running
   if (_queue.empty()) {

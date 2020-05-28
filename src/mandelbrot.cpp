@@ -8,8 +8,6 @@
 #include <mutex>
 #include <optional>
 
-std::mutex _ioMutex;
-
 /* Draw at 24 frames per second */
 constexpr int MILLISECONDS_BETWEEN_FRAMES = 1000 / 24;
 
@@ -27,13 +25,6 @@ inline Uint32 colorFromIterations(unsigned int iterations,
 }
 
 void updatePixelsInRange(RenderOptions options) {
-  _ioMutex.lock();
-
-  std::cout << "updating k * " << options.skip_count << " + " << options.offset
-            << std::endl;
-
-  _ioMutex.unlock();
-
   double x_range = options.x_max - options.x_min;
   double y_range = options.y_max - options.y_min;
 
@@ -258,16 +249,18 @@ void Mandelbrot::dispatchRender(std::vector<Uint32> &pixels) {
   // Split screen pixels into equally-sized chunks and get threads to
   // recalculate
   for (unsigned int i = 0; i < thread_count; i++) {
-    RenderOptions r{.pixels = pixels,
-                    .offset = i,
-                    .skip_count = thread_count,
-                    .max_iterations = max_iterations,
-                    .screen_width = screen_width,
-                    .screen_height = screen_height,
-                    .x_min = x_min,
-                    .x_max = x_max,
-                    .y_min = y_min,
-                    .y_max = y_max};
+    RenderOptions r{
+      pixels : pixels,
+      offset : i,
+      skip_count : thread_count,
+      max_iterations : max_iterations,
+      screen_width : screen_width,
+      screen_height : screen_height,
+      x_min : x_min,
+      x_max : x_max,
+      y_min : y_min,
+      y_max : y_max
+    };
 
     queue.send(std::move(r));
   }
