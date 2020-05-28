@@ -249,19 +249,16 @@ void Mandelbrot::dispatchRender(std::vector<Uint32> &pixels) {
   // Split screen pixels into equally-sized chunks and get threads to
   // recalculate
   for (unsigned int i = 0; i < thread_count; i++) {
-    RenderOptions r{
-      pixels : pixels,
-      offset : i,
-      skip_count : thread_count,
-      max_iterations : max_iterations,
-      screen_width : screen_width,
-      screen_height : screen_height,
-      x_min : x_min,
-      x_max : x_max,
-      y_min : y_min,
-      y_max : y_max
-    };
-
+    RenderOptions r{pixels};
+    r.offset = i;
+    r.skip_count = thread_count;
+    r.max_iterations = max_iterations;
+    r.screen_width = screen_width;
+    r.screen_height = screen_height;
+    r.x_min = x_min;
+    r.x_max = x_max;
+    r.y_min = y_min;
+    r.y_max = y_max;
     queue.send(std::move(r));
   }
 }
