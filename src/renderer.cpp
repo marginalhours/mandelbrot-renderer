@@ -57,6 +57,9 @@ Renderer::~Renderer() {
   SDL_Quit();
 }
 
+/** Since older compilers don't have the <filesystem> header, this
+ * function is for checking the existence of screenshot files
+ */
 inline bool file_exists(const std::string &name) {
   if (FILE *file = fopen(name.c_str(), "r")) {
     fclose(file);
