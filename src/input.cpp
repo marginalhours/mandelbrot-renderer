@@ -80,6 +80,10 @@ void Input::handleInput(Mandelbrot &instance, Renderer &renderer) const {
         instance.increaseIterations();
         break;
       }
+      case SDLK_c: {
+        instance.nextColourScheme();
+        break;
+      }
       }
       break;
     }

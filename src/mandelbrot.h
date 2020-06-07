@@ -22,11 +22,12 @@ struct RenderOptions {
   std::vector<Uint32> &pixels; /* pixels to update */
   unsigned int offset;         /* which rows to render */
   unsigned int skip_count;     /* how many rows to skip between rendered rows */
-  unsigned int first_row;      /* first row of pixels to calculate */
-  unsigned int last_row;       /* last row of pixels to calculate */
-  unsigned int max_iterations;
+  unsigned int max_iterations; /* Maximum number of iterations */
+  Uint32 (*colouring_function)(double f); /* Colouring function */
+  /* Dimensions on screen in pixels */
   unsigned int screen_width;
   unsigned int screen_height;
+  /* Coordinates on complex plane */
   double x_min;
   double x_max;
   double y_min;
@@ -58,6 +59,7 @@ public:
   void onMouseMove(int x, int y);
   void increaseIterations();
   void decreaseIterations();
+  void nextColourScheme();
 
 private:
   // number of available threads
@@ -85,6 +87,8 @@ private:
 
   // maximum iterations
   unsigned int max_iterations = 50;
+  // current colour scheme
+  unsigned int colour_scheme_id = 0;
 
   // selection rectangle
   SDL_Rect selection{0, 0, 0, 0};

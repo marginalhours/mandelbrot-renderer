@@ -7,14 +7,12 @@
 #include <iostream>
 #include <mutex>
 #include <optional>
+#include <vector>
 
 /* Draw at 24 frames per second */
 constexpr int MILLISECONDS_BETWEEN_FRAMES = 1000 / 24;
 
-inline Uint32 colorFromIterations(unsigned int iterations,
-                                  unsigned max_iterations) {
-  // we use the bernstein polynomials for colouring, for smoothness
-  double f = (double)iterations / (double)max_iterations;
+Uint32 bernstein(double f) {
   double h = (1 - f);
 
   int r = (int)(9 * h * f * f * f * 255);
@@ -24,9 +22,40 @@ inline Uint32 colorFromIterations(unsigned int iterations,
   return 0xff000000 | r << 16 | g << 8 | b;
 }
 
+Uint32 bernstein2(double f) {
+  double h = (1 - f);
+
+  int b = (int)(9 * h * f * f * f * 255);
+  int r = (int)(15 * h * h * f * f * 255);
+  int g = (int)(8.5 * h * h * h * f * 255);
+
+  return 0xff000000 | r << 16 | g << 8 | b;
+}
+
+Uint32 bernstein3(double f) {
+  double h = (1 - f);
+
+  int g = (int)(9 * h * f * f * f * 255);
+  int b = (int)(15 * h * h * f * f * 255);
+  int r = (int)(8.5 * h * h * h * f * 255);
+
+  return 0xff000000 | r << 16 | g << 8 | b;
+}
+
+Uint32 ghost(double f) {
+  int grey = f * 0xff;
+  return 0xff000000 | grey << 16 | grey << 8 | grey;
+}
+
+/* Vector of colour functions */
+const std::vector<Uint32 (*)(double)> colourFunctions{&bernstein, &bernstein2,
+                                                      &bernstein3, &ghost};
+
 void updatePixelsInRange(RenderOptions options) {
   double x_range = options.x_max - options.x_min;
   double y_range = options.y_max - options.y_min;
+
+  Uint32 (*colourFunc)(double) = options.colouring_function;
 
   for (auto j = options.offset; j < options.screen_height;
        j += options.skip_count) {
@@ -52,7 +81,7 @@ void updatePixelsInRange(RenderOptions options) {
         options.pixels[(options.screen_width * j) + i] = 0xff000000;
       } else {
         options.pixels[(options.screen_width * j) + i] =
-            colorFromIterations(iteration, options.max_iterations);
+            colourFunc((double)iteration / (double)options.max_iterations);
       }
     }
   }
@@ -129,6 +158,12 @@ void Mandelbrot::decreaseIterations() {
     max_iterations -= 10;
     setDirty();
   }
+}
+
+void Mandelbrot::nextColourScheme() {
+  colour_scheme_id = (colour_scheme_id + 1) % colourFunctions.size();
+
+  setDirty();
 }
 
 void Mandelbrot::onMouseDown(int x, int y) {
@@ -255,6 +290,7 @@ void Mandelbrot::dispatchRender(std::vector<Uint32> &pixels) {
     r.max_iterations = max_iterations;
     r.screen_width = screen_width;
     r.screen_height = screen_height;
+    r.colouring_function = colourFunctions[colour_scheme_id];
     r.x_min = x_min;
     r.x_max = x_max;
     r.y_min = y_min;
