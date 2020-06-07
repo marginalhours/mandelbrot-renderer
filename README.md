@@ -11,7 +11,7 @@ from all the other pixels -- so this work really belongs in a GPU shader rather 
 on the CPU. It's fun to see how large the speedup from multithreading can be when the work
 truly is parallelisable, though!
 
-# Obligatory action shots
+## Obligatory action shots
 
 ![](screenshot-2.bmp)
 ![](screenshot-3.bmp)
